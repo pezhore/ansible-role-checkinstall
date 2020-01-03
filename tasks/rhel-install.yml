@@ -1,0 +1,53 @@
+---
+- name: install the 'Development tools' package group
+  yum:
+    name: "@Development tools"
+    state: present
+
+- name: install prereqs
+  package:
+    name: "{{ item }}"
+    state: latest
+  with_items:
+    - rpm-build
+    - rpmdevtools
+    - automake
+    - make
+
+- name: Setup folder structure for rpmdev
+  command: rpmdev-setuptree
+  args:
+    creates: /root/rpmbuild/SOURCES
+
+- name: create source directory
+  file:
+    path: /usr/local/src
+    state: directory
+
+- name: Install checkinstall from source
+  block:
+    - name: download checkinstall source
+      git:
+        repo: https://github.com/pezhore/checkinstall.git
+        dest: /usr/local/src/checkinstall
+        update: no
+
+    - name: build checkinstall
+      command: make
+      args:
+        creates: /usr/local/src/checkinstall/installwatch/installwatch.so
+        chdir: /usr/local/src/checkinstall
+
+    - name: Install checkinstall
+      command: make install
+      args:
+        creates: /usr/local/sbin/checkinstall
+        chdir: /usr/local/src/checkinstall
+
+    - name: create symlink
+      file:
+        src: /usr/local/sbin/checkinstall
+        dest: /usr/bin/checkinstall
+        state: link
+  when: ansible_local.SoftwareVersion.checkinstall == ""
+  become: true

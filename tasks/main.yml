@@ -1,0 +1,14 @@
+---
+
+- name: install from source for redhat family
+  include_tasks: rhel-install.yml
+  when: ansible_os_family == "RedHat"
+
+- name: Install from apt for debian family
+  package:
+    name: checkinstall
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: "Re-run setup to capture newly installed software"
+  setup: ~
